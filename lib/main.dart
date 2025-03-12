@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:medcare/constants/theme.dart';
+import 'package:medcare/screens/ecran_acceuil.dart';
 import 'package:medcare/screens/profile.dart';
 import 'package:medcare/screens/rdv.dart';
 import 'package:medcare/screens/traitements.dart';
+import 'package:medcare/services/data_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Configurer le style de la barre d'état
+  SystemChrome.setSystemUIOverlayStyle(
+    SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: AppTheme.backgroundColor,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+
+  // Orientation préférée
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Initialiser les données
+  DataService().initialize();
+
   runApp(const MyApp());
 }
 
@@ -15,7 +40,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'MedCare',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: AppTheme.theme,
       initialRoute: '/',
       routes: {
         '/': (context) => const HomeScreen(),
@@ -23,41 +48,6 @@ class MyApp extends StatelessWidget {
         '/rendezvous': (context) => const RendezvousScreen(),
         '/profil': (context) => const ProfilScreen(),
       },
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('MedCare')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/traitements'),
-              icon: const Icon(Icons.medical_services),
-              label: const Text('Mes Traitements'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/rendezvous'),
-              icon: const Icon(Icons.calendar_today),
-              label: const Text('Mes Rendez-vous'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/profil'),
-              icon: const Icon(Icons.person),
-              label: const Text('Mon Profil'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
