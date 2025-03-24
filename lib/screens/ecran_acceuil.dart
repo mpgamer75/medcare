@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medcare/constants/theme.dart';
 import 'package:medcare/screens/profile.dart';
-import 'package:medcare/screens/rdv.dart';
 import 'package:medcare/screens/traitements.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -41,7 +40,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Gérez facilement vos traitements et rendez-vous.',
+                'Gérez facilement vos traitements médicaux.',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyLarge?.copyWith(color: AppTheme.textSecondary),
@@ -80,22 +79,6 @@ class HomeScreen extends StatelessWidget {
 
               _buildActionCard(
                 context,
-                icon: Icons.calendar_today,
-                title: 'Mes Rendez-vous',
-                subtitle: 'Consultez et planifiez vos rendez-vous médicaux',
-                onTap:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RendezvousScreen(),
-                      ),
-                    ),
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildActionCard(
-                context,
                 icon: Icons.person,
                 title: 'Mon Profil',
                 subtitle: 'Gérez vos informations personnelles et médicales',
@@ -121,10 +104,6 @@ class HomeScreen extends StatelessWidget {
             icon: Icon(Icons.medication),
             label: 'Traitements',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Rendez-vous',
-          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
         onTap: (index) {
@@ -133,8 +112,6 @@ class HomeScreen extends StatelessWidget {
           } else if (index == 1) {
             Navigator.pushNamed(context, '/traitements');
           } else if (index == 2) {
-            Navigator.pushNamed(context, '/rendezvous');
-          } else if (index == 3) {
             Navigator.pushNamed(context, '/profil');
           }
         },
@@ -182,12 +159,6 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.medication,
                   title: '2',
                   subtitle: 'Médicaments',
-                ),
-                _buildSummaryItem(
-                  context,
-                  icon: Icons.calendar_today,
-                  title: '1',
-                  subtitle: 'Rendez-vous',
                 ),
                 _buildSummaryItem(
                   context,

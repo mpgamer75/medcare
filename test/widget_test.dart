@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medcare/main.dart';
 import 'package:medcare/screens/profile.dart';
-import 'package:medcare/screens/rdv.dart';
 import 'package:medcare/screens/traitements.dart';
 
 void main() {
@@ -16,12 +15,14 @@ void main() {
     // ✅ Vérifie la présence du texte de bienvenue
     expect(find.text('Bienvenue 👋'), findsOneWidget);
 
-    // ✅ Vérifie la présence des boutons de traitement et de rendez-vous
+    // ✅ Vérifie la présence du bouton de traitement
     expect(find.text('Mes Traitements'), findsOneWidget);
-    expect(find.text('Mes Rendez-vous'), findsOneWidget);
 
     // ✅ Vérifie la présence du bouton de profil
     expect(find.text('Mon Profil'), findsOneWidget);
+
+    // Vérifie que le bouton de rendez-vous n'existe plus
+    expect(find.text('Mes Rendez-vous'), findsNothing);
   });
 
   testWidgets('Navigation vers TraitementsScreen', (WidgetTester tester) async {
@@ -35,17 +36,6 @@ void main() {
     expect(find.byType(TraitementsScreen), findsOneWidget);
   });
 
-  testWidgets('Navigation vers RendezvousScreen', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp());
-
-    // ✅ Appuie sur le bouton "Mes Rendez-vous"
-    await tester.tap(find.text('Mes Rendez-vous'));
-    await tester.pumpAndSettle();
-
-    // ✅ Vérifie que RendezvousScreen est affiché après la navigation
-    expect(find.byType(RendezvousScreen), findsOneWidget);
-  });
-
   testWidgets('Navigation vers ProfilScreen', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
@@ -55,5 +45,23 @@ void main() {
 
     // ✅ Vérifie que ProfilScreen est affiché après la navigation
     expect(find.byType(ProfilScreen), findsOneWidget);
+  });
+
+  testWidgets('BottomNavigationBar contient 3 éléments', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+
+    // ✅ Vérifie que la BottomNavigationBar contient désormais 3 éléments
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    final bottomNavBar = tester.widget<BottomNavigationBar>(
+      find.byType(BottomNavigationBar),
+    );
+    expect(bottomNavBar.items.length, 3);
+
+    // Vérifie que les éléments sont Accueil, Traitements et Profil
+    expect(bottomNavBar.items[0].label, 'Accueil');
+    expect(bottomNavBar.items[1].label, 'Traitements');
+    expect(bottomNavBar.items[2].label, 'Profil');
   });
 }

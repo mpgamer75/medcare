@@ -182,27 +182,23 @@ class CustomFloatingActionButton extends StatelessWidget {
   }
 }
 
-/// Badge d'état pour les rendez-vous et traitements
+/// Badge d'état pour les traitements
 class StatusBadge extends StatelessWidget {
   final String status;
   final Map<String, Color> statusColors = {
-    'upcoming': AppTheme.primaryColor,
     'active': AppTheme.primaryColor,
     'completed': AppTheme.success,
     'done': AppTheme.success,
     'canceled': AppTheme.error,
-    'missed': AppTheme.error,
     'warning': AppTheme.warning,
     'pending': AppTheme.info,
   };
 
   final Map<String, String> statusLabels = {
-    'upcoming': 'À venir',
     'active': 'Actif',
     'completed': 'Terminé',
     'done': 'Terminé',
     'canceled': 'Annulé',
-    'missed': 'Manqué',
     'warning': 'Attention',
     'pending': 'En attente',
   };
@@ -251,10 +247,6 @@ class MedCareBottomNavigationBar extends StatelessWidget {
           icon: Icon(Icons.medication),
           label: 'Traitements',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_today),
-          label: 'Rendez-vous',
-        ),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
       ],
       onTap: (index) {
@@ -268,9 +260,6 @@ class MedCareBottomNavigationBar extends StatelessWidget {
             Navigator.pushReplacementNamed(context, '/traitements');
             break;
           case 2:
-            Navigator.pushReplacementNamed(context, '/rendezvous');
-            break;
-          case 3:
             Navigator.pushReplacementNamed(context, '/profil');
             break;
         }

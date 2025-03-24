@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Couleurs principales
-  static const Color primaryColor = Color(0xFF01A86C); // Vert médical principal
+  // Couleurs principales - changement du vert au rouge
+  static const Color primaryColor = Color(
+    0xFFB23A48,
+  ); // Rouge non vif principal
   static const Color secondaryColor = Color(
     0xFF3DA5D9,
-  ); // Bleu médical secondaire
-  static const Color accentColor = Color(
-    0xFF7DCFB6,
-  ); // Vert d'accent plus clair
+  ); // Bleu médical secondaire (inchangé)
+  static const Color accentColor = Color(0xFFD88C9A); // Rose clair d'accent
 
   // Couleurs de fond
   static const Color backgroundColor = Color(
     0xFFF5F7FA,
-  ); // Fond gris très clair
-  static const Color cardColor = Colors.white;
+  ); // Fond gris très clair (inchangé)
+  static const Color cardColor = Colors.white; // (inchangé)
 
-  // Couleurs de texte
+  // Couleurs de texte (inchangées)
   static const Color textPrimary = Color(
     0xFF2D3748,
   ); // Gris foncé pour texte principal
@@ -27,7 +27,7 @@ class AppTheme {
     0xFFE2E8F0,
   ); // Gris clair pour texte sur fond foncé
 
-  // Couleurs fonctionnelles
+  // Couleurs fonctionnelles (inchangées)
   static const Color success = Color(
     0xFF38B2AC,
   ); // Vert turquoise pour le succès
@@ -37,14 +37,14 @@ class AppTheme {
   ); // Orange pour les avertissements
   static const Color info = Color(0xFF3182CE); // Bleu pour les informations
 
-  // Gradients
+  // Gradients - modification pour utiliser des teintes de rouge
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF01A86C), Color(0xFF0FC8A2)],
+    colors: [Color(0xFFB23A48), Color(0xFFD88C9A)],
   );
 
-  // Styles de texte
+  // Styles de texte (inchangés)
   static const TextStyle headingStyle = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.bold,

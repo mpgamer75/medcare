@@ -102,10 +102,6 @@ class _TraitementsScreenState extends State<TraitementsScreen>
             icon: Icon(Icons.medication),
             label: 'Traitements',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Rendez-vous',
-          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
         onTap: (index) {
@@ -114,8 +110,6 @@ class _TraitementsScreenState extends State<TraitementsScreen>
           } else if (index == 1) {
             // Déjà sur l'écran des traitements
           } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/rendezvous');
-          } else if (index == 3) {
             Navigator.pushReplacementNamed(context, '/profil');
           }
         },

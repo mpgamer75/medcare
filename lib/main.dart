@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:medcare/constants/theme.dart';
 import 'package:medcare/screens/ecran_acceuil.dart';
 import 'package:medcare/screens/profile.dart';
-import 'package:medcare/screens/rdv.dart';
 import 'package:medcare/screens/traitements.dart';
 import 'package:medcare/services/data_service.dart';
 
@@ -45,7 +44,6 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const HomeScreen(),
         '/traitements': (context) => const TraitementsScreen(),
-        '/rendezvous': (context) => const RendezvousScreen(),
         '/profil': (context) => const ProfilScreen(),
       },
     );
