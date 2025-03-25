@@ -1047,27 +1047,254 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
   // Boîte de dialogue pour éditer le profil
   void _showEditProfileDialog() {
+    // Controllers pour les champs du formulaire
+    final nameController = TextEditingController(text: _userProfile.name);
+    final emailController = TextEditingController(text: _userProfile.email);
+    final phoneController = TextEditingController(text: _userProfile.phone);
+
+    // Pour la date de naissance
+    DateTime selectedBirthdate = _userProfile.birthdate;
+
+    // Pour la taille, le poids et le groupe sanguin
+    final heightController = TextEditingController(text: _userProfile.height);
+    final weightController = TextEditingController(text: _userProfile.weight);
+    final bloodTypeController = TextEditingController(
+      text: _userProfile.bloodType,
+    );
+
+    // Pour les allergies et maladies chroniques
+    final allergiesController = TextEditingController(
+      text: _userProfile.allergies.join(', '),
+    );
+    final chronicDiseasesController = TextEditingController(
+      text: _userProfile.chronicDiseases.join(', '),
+    );
+
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: const Text('Éditer le profil'),
-            content: const SingleChildScrollView(
-              child: Text('Formulaire d\'édition du profil (à implémenter)'),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  // Logique pour sauvegarder les modifications
-                  Navigator.pop(context);
-                },
-                child: const Text('Enregistrer'),
-              ),
-            ],
+          (context) => StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text('Éditer le profil'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Informations personnelles
+                      const Text(
+                        'Informations personnelles',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nom complet',
+                          prefixIcon: Icon(Icons.person),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Téléphone',
+                          prefixIcon: Icon(Icons.phone),
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Date de naissance avec sélecteur
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Date de naissance:'),
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () async {
+                              final DateTime? pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate: selectedBirthdate,
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                              );
+
+                              if (pickedDate != null) {
+                                setState(() {
+                                  selectedBirthdate = pickedDate;
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 16,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _formatDate(selectedBirthdate),
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+                      // Informations médicales
+                      const Text(
+                        'Informations médicales',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: heightController,
+                        decoration: const InputDecoration(
+                          labelText: 'Taille (cm)',
+                          prefixIcon: Icon(Icons.height),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: weightController,
+                        decoration: const InputDecoration(
+                          labelText: 'Poids (kg)',
+                          prefixIcon: Icon(Icons.monitor_weight),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: bloodTypeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Groupe sanguin',
+                          prefixIcon: Icon(Icons.bloodtype),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Allergies
+                      TextField(
+                        controller: allergiesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Allergies (séparées par des virgules)',
+                          prefixIcon: Icon(Icons.warning_amber),
+                          hintText: 'Ex: Arachide, Pénicilline',
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Maladies chroniques
+                      TextField(
+                        controller: chronicDiseasesController,
+                        decoration: const InputDecoration(
+                          labelText:
+                              'Maladies chroniques (séparées par des virgules)',
+                          prefixIcon: Icon(Icons.medical_information),
+                          hintText: 'Ex: Asthme, Diabète',
+                        ),
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Annuler'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                    ),
+                    onPressed: () {
+                      // Traiter les allergies et les maladies chroniques
+                      final List<String> allergies =
+                          allergiesController.text
+                              .split(',')
+                              .map((e) => e.trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+
+                      final List<String> chronicDiseases =
+                          chronicDiseasesController.text
+                              .split(',')
+                              .map((e) => e.trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+
+                      // MAJ de l'utilisateur
+                      final updatedUser = _userProfile.copyWith(
+                        name: nameController.text,
+                        email: emailController.text,
+                        phone: phoneController.text,
+                        birthdate: selectedBirthdate,
+                        height: heightController.text,
+                        weight: weightController.text,
+                        bloodType: bloodTypeController.text,
+                        allergies: allergies,
+                        chronicDiseases: chronicDiseases,
+                      );
+
+                      // Sauvegarder les modifications
+                      _dataService.updateUser(updatedUser);
+
+                      // Mettre à jour l'état local
+                      setState(() {
+                        _userProfile = updatedUser;
+                      });
+
+                      // Fermer la boîte de dialogue
+                      Navigator.pop(context);
+
+                      // Afficher un message de confirmation
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Profil mis à jour avec succès'),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: AppTheme.success,
+                        ),
+                      );
+                    },
+                    child: const Text('Enregistrer'),
+                  ),
+                ],
+              );
+            },
           ),
     );
   }
