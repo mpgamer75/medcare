@@ -20,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   DateTime _selectedDate = DateTime(1990, 1, 1);
   bool _isLoading = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -33,8 +34,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_isSubmitting) return;
+
     setState(() {
       _isLoading = true;
+      _isSubmitting = true;
     });
 
     try {
@@ -59,13 +63,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur d\'inscription: ${e.toString()}'),
+          content: Text('${e.toString()}'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
         ),
       );
     } finally {
       setState(() {
         _isLoading = false;
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted) {
+            setState(() {
+              _isSubmitting = false;
+            });
+          }
+        });
       });
     }
   }

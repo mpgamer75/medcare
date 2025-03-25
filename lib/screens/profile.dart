@@ -25,8 +25,17 @@ class _ProfilScreenState extends State<ProfilScreen> {
   @override
   void initState() {
     super.initState();
-    _userProfile = _dataService.currentUser;
-    _documents = _dataService.documents;
+
+    try {
+      _userProfile = _dataService.currentUser;
+      _documents = _dataService.documents;
+    } catch (e) {
+      // En cas d'erreur, utiliser un profil par défaut
+      print('Erreur lors du chargement du profil: $e');
+
+      // On laisse les valeurs par défaut définies lors de l'initialisation des variables
+      // L'interface devrait gérer correctement le cas des données vides
+    }
   }
 
   @override
@@ -161,7 +170,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
             radius: 50,
             backgroundColor: Colors.white,
             child: Text(
-              _getInitials(_userProfile.name),
+              _getInitials(_userProfile?.name ?? 'Utilisateur'),
               style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
@@ -185,52 +194,30 @@ class _ProfilScreenState extends State<ProfilScreen> {
           // Email
           Text(
             _userProfile.email,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white.withOpacity(0.8),
-            ),
+            style: const TextStyle(fontSize: 16, color: Colors.white70),
           ),
-          const SizedBox(height: 16),
 
-          // Carte d'information rapide
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildQuickInfoItem(
-                  icon: Icons.cake,
-                  label: 'Âge',
-                  value: '${_userProfile.age} ans',
-                ),
-                _buildQuickInfoItem(
-                  icon: Icons.height,
-                  label: 'Taille',
-                  value: _userProfile.height,
-                ),
-                _buildQuickInfoItem(
-                  icon: Icons.monitor_weight,
-                  label: 'Poids',
-                  value: _userProfile.weight,
-                ),
-                _buildQuickInfoItem(
-                  icon: Icons.bloodtype,
-                  label: 'Groupe',
-                  value: _userProfile.bloodType,
-                ),
-              ],
-            ),
+          const SizedBox(height: 8),
+
+          // Information principale (âge, taille, poids)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildProfileStat(
+                label: 'Âge',
+                value: _userProfile.age.toString(),
+              ),
+              _buildProfileStat(
+                label: 'Taille',
+                value:
+                    _userProfile.height.isNotEmpty ? _userProfile.height : '-',
+              ),
+              _buildProfileStat(
+                label: 'Poids',
+                value:
+                    _userProfile.weight.isNotEmpty ? _userProfile.weight : '-',
+              ),
+            ],
           ),
         ],
       ),
@@ -1760,5 +1747,29 @@ class _ProfilScreenState extends State<ProfilScreen> {
       case DocumentType.other:
         return 'Autre document';
     }
+  }
+
+  // Ajouter cette méthode à la classe _ProfilScreenState
+  Widget _buildProfileStat({required String label, required String value}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, color: Colors.white70),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

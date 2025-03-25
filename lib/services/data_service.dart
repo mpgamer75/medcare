@@ -28,72 +28,218 @@ class DataService {
       throw Exception('Aucun utilisateur connecté');
     }
 
-    // Récupérer les informations de base de l'utilisateur
-    final userResponse =
-        await SupabaseService.client
-            .from('users')
-            .select()
-            .eq('id', userId)
-            .single();
+    try {
+      // Récupérer les informations de base de l'utilisateur
+      final userResponse =
+          await SupabaseService.client
+              .from('users')
+              .select()
+              .eq('id', userId)
+              .maybeSingle(); // Utiliser maybeSingle au lieu de single pour gérer le cas où l'utilisateur n'existe pas
 
-    // Récupérer les allergies
-    final allergiesResponse = await SupabaseService.client
-        .from('allergies')
-        .select('name')
-        .eq('user_id', userId);
-    final List<String> allergies =
-        (allergiesResponse as List).map((a) => a['name'] as String).toList();
+      // Si l'utilisateur n'existe pas encore dans la table users, créer un profil par défaut
+      if (userResponse == null) {
+        // Créer un profil utilisateur par défaut
+        _currentUser = User(
+          id: userId,
+          name: 'Utilisateur',
+          email: SupabaseService.client.auth.currentUser?.email ?? '',
+          phone: '',
+          birthdate: DateTime.now(),
+          height: '',
+          weight: '',
+          bloodType: '',
+          allergies: [],
+          chronicDiseases: [],
+          emergencyContact: EmergencyContact(name: '', relation: '', phone: ''),
+          doctorInfo: DoctorInfo(
+            name: '',
+            specialty: '',
+            phone: '',
+            address: '',
+          ),
+        );
 
-    // Récupérer les maladies chroniques
-    final diseasesResponse = await SupabaseService.client
-        .from('chronic_diseases')
-        .select('name')
-        .eq('user_id', userId);
-    final List<String> chronicDiseases =
-        (diseasesResponse as List).map((d) => d['name'] as String).toList();
+        // Essayer de créer le profil dans la base de données
+        try {
+          await SupabaseService.client.from('users').insert({
+            'id': userId,
+            'name': 'Utilisateur',
+            'email': SupabaseService.client.auth.currentUser?.email ?? '',
+            'birthdate': DateTime.now().toIso8601String(),
+          });
 
-    // Récupérer le contact d'urgence
-    final emergencyContactResponse =
-        await SupabaseService.client
-            .from('emergency_contacts')
-            .select()
-            .eq('user_id', userId)
-            .single();
-    final emergencyContact = EmergencyContact(
-      name: emergencyContactResponse['name'],
-      relation: emergencyContactResponse['relation'],
-      phone: emergencyContactResponse['phone'],
-    );
+          // Créer les entrées vides pour les relations
+          await SupabaseService.client.from('emergency_contacts').insert({
+            'user_id': userId,
+            'name': '',
+            'relation': '',
+            'phone': '',
+          });
 
-    // Récupérer les infos du médecin
-    final doctorInfoResponse =
-        await SupabaseService.client
-            .from('doctor_info')
-            .select()
-            .eq('user_id', userId)
-            .single();
-    final doctorInfo = DoctorInfo(
-      name: doctorInfoResponse['name'],
-      specialty: doctorInfoResponse['specialty'],
-      phone: doctorInfoResponse['phone'],
-      address: doctorInfoResponse['address'],
-    );
+          await SupabaseService.client.from('doctor_info').insert({
+            'user_id': userId,
+            'name': '',
+            'specialty': '',
+            'phone': '',
+            'address': '',
+          });
+        } catch (e) {
+          // Gérer silencieusement l'erreur pour éviter les erreurs d'initialisation
+          print('Erreur lors de la création du profil par défaut: $e');
+        }
 
-    // Créer l'objet utilisateur
-    _currentUser = User(
-      id: userId,
-      name: userResponse['name'],
-      email: userResponse['email'],
-      phone: userResponse['phone'] ?? '',
-      birthdate: DateTime.parse(userResponse['birthdate']),
-      height: userResponse['height'] ?? '',
-      weight: userResponse['weight'] ?? '',
-      bloodType: userResponse['blood_type'] ?? '',
-      allergies: allergies,
-      chronicDiseases: chronicDiseases,
-      emergencyContact: emergencyContact,
-      doctorInfo: doctorInfo,
-    );
+        return;
+      }
+
+      // Si on arrive ici, l'utilisateur existe dans la base de données
+      // Le reste de votre code existant pour récupérer les allergies, etc.
+      List<String> allergies = [];
+      List<String> chronicDiseases = [];
+      EmergencyContact emergencyContact;
+      DoctorInfo doctorInfo;
+
+      try {
+        // Récupérer les allergies
+        final allergiesResponse = await SupabaseService.client
+            .from('allergies')
+            .select('name')
+            .eq('user_id', userId);
+        allergies =
+            (allergiesResponse as List)
+                .map((a) => a['name'] as String)
+                .toList();
+      } catch (e) {
+        allergies = [];
+      }
+
+      try {
+        // Récupérer les maladies chroniques
+        final diseasesResponse = await SupabaseService.client
+            .from('chronic_diseases')
+            .select('name')
+            .eq('user_id', userId);
+        chronicDiseases =
+            (diseasesResponse as List).map((d) => d['name'] as String).toList();
+      } catch (e) {
+        chronicDiseases = [];
+      }
+
+      try {
+        // Récupérer le contact d'urgence
+        final emergencyContactResponse =
+            await SupabaseService.client
+                .from('emergency_contacts')
+                .select()
+                .eq('user_id', userId)
+                .maybeSingle();
+
+        if (emergencyContactResponse != null) {
+          emergencyContact = EmergencyContact(
+            name: emergencyContactResponse['name'] ?? '',
+            relation: emergencyContactResponse['relation'] ?? '',
+            phone: emergencyContactResponse['phone'] ?? '',
+          );
+        } else {
+          // Créer un contact d'urgence vide
+          emergencyContact = EmergencyContact(
+            name: '',
+            relation: '',
+            phone: '',
+          );
+          // Et l'insérer dans la base de données
+          await SupabaseService.client.from('emergency_contacts').insert({
+            'user_id': userId,
+            'name': '',
+            'relation': '',
+            'phone': '',
+          });
+        }
+      } catch (e) {
+        emergencyContact = EmergencyContact(name: '', relation: '', phone: '');
+      }
+
+      try {
+        // Récupérer les infos du médecin
+        final doctorInfoResponse =
+            await SupabaseService.client
+                .from('doctor_info')
+                .select()
+                .eq('user_id', userId)
+                .maybeSingle();
+
+        if (doctorInfoResponse != null) {
+          doctorInfo = DoctorInfo(
+            name: doctorInfoResponse['name'] ?? '',
+            specialty: doctorInfoResponse['specialty'] ?? '',
+            phone: doctorInfoResponse['phone'] ?? '',
+            address: doctorInfoResponse['address'] ?? '',
+          );
+        } else {
+          // Créer des infos médecin vides
+          doctorInfo = DoctorInfo(
+            name: '',
+            specialty: '',
+            phone: '',
+            address: '',
+          );
+          // Et les insérer dans la base de données
+          await SupabaseService.client.from('doctor_info').insert({
+            'user_id': userId,
+            'name': '',
+            'specialty': '',
+            'phone': '',
+            'address': '',
+          });
+        }
+      } catch (e) {
+        doctorInfo = DoctorInfo(
+          name: '',
+          specialty: '',
+          phone: '',
+          address: '',
+        );
+      }
+
+      // Créer l'objet utilisateur
+      _currentUser = User(
+        id: userId,
+        name: userResponse['name'] ?? 'Utilisateur',
+        email:
+            userResponse['email'] ??
+            SupabaseService.client.auth.currentUser?.email ??
+            '',
+        phone: userResponse['phone'] ?? '',
+        birthdate:
+            userResponse['birthdate'] != null
+                ? DateTime.parse(userResponse['birthdate'])
+                : DateTime.now(),
+        height: userResponse['height'] ?? '',
+        weight: userResponse['weight'] ?? '',
+        bloodType: userResponse['blood_type'] ?? '',
+        allergies: allergies,
+        chronicDiseases: chronicDiseases,
+        emergencyContact: emergencyContact,
+        doctorInfo: doctorInfo,
+      );
+    } catch (e) {
+      // En cas d'erreur, créer un utilisateur par défaut pour éviter les exceptions
+      print('Erreur lors du chargement du profil: $e');
+      _currentUser = User(
+        id: userId,
+        name: 'Utilisateur',
+        email: SupabaseService.client.auth.currentUser?.email ?? '',
+        phone: '',
+        birthdate: DateTime.now(),
+        height: '',
+        weight: '',
+        bloodType: '',
+        allergies: [],
+        chronicDiseases: [],
+        emergencyContact: EmergencyContact(name: '', relation: '', phone: ''),
+        doctorInfo: DoctorInfo(name: '', specialty: '', phone: '', address: ''),
+      );
+    }
   }
 
   // Récupérer les traitements

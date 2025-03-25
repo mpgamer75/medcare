@@ -15,17 +15,17 @@ class AuthService {
     required String name,
     required DateTime birthdate,
   }) async {
-    // Créer l'utilisateur dans Supabase Auth
-    final response = await SupabaseService.client.auth.signUp(
-      email: email,
-      password: password,
-    );
-
-    if (response.user == null) {
-      throw Exception('Erreur lors de la création du compte');
-    }
-
     try {
+      // Créer l'utilisateur dans Supabase Auth
+      final response = await SupabaseService.client.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      if (response.user == null) {
+        throw Exception('Erreur lors de la création du compte');
+      }
+
       // Créer le profil utilisateur dans la table users
       await SupabaseService.client.from('users').insert({
         'id': response.user!.id,
@@ -50,9 +50,17 @@ class AuthService {
         'address': '',
       });
     } catch (e) {
-      // En cas d'erreur, supprimer l'utilisateur créé
-      await SupabaseService.client.auth.admin.deleteUser(response.user!.id);
-      throw Exception('Erreur lors de la création du profil: $e');
+      // Gérer spécifiquement les erreurs de limitation de taux
+      if (e.toString().contains(
+            'too_many_requests_over_email_send_rate_limit',
+          ) ||
+          e.toString().contains('429')) {
+        throw Exception(
+          'Trop de tentatives d\'inscription. Veuillez attendre quelques minutes avant de réessayer.',
+        );
+      }
+      // Rethrow pour les autres erreurs
+      rethrow;
     }
   }
 
@@ -61,10 +69,20 @@ class AuthService {
     required String email, // informations requi pour se connecter
     required String password,
   }) async {
-    await SupabaseService.client.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      await SupabaseService.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      if (e.toString().contains('too_many_requests') ||
+          e.toString().contains('429')) {
+        throw Exception(
+          'Trop de tentatives de connexion. Veuillez attendre quelques minutes avant de réessayer.',
+        );
+      }
+      rethrow;
+    }
   }
 
   // Déconnexion

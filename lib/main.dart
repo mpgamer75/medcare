@@ -37,6 +37,15 @@ void main() async {
   // Initialiser Supabase
   await SupabaseService.initialize();
 
+  // Initialiser le DataService si l'utilisateur est connecté
+  if (AuthService().isAuthenticated) {
+    try {
+      await DataService().initialize();
+    } catch (e) {
+      print('Erreur lors de l\'initialisation du service de données: $e');
+    }
+  }
+
   runApp(const MyApp());
 }
 
@@ -51,7 +60,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.theme,
       initialRoute: AuthService().isAuthenticated ? '/' : '/login',
       routes: {
-        '/': (context) => const HomeScreen(),
+        '/': (context) => const AuthWrapper(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/traitements': (context) => const TraitementsScreen(),
@@ -67,23 +76,44 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: DataService().initialize(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    // Si l'utilisateur est connecté mais que le DataService n'est pas initialisé
+    if (AuthService().isAuthenticated) {
+      return FutureBuilder(
+        future: DataService().initialize(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
 
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(child: Text('Erreur: ${snapshot.error}')),
-          );
-        }
+          if (snapshot.hasError) {
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Erreur: ${snapshot.error}'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await AuthService().signOut();
+                        Navigator.of(context).pushReplacementNamed('/login');
+                      },
+                      child: const Text('Se déconnecter'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
 
-        return const HomeScreen();
-      },
-    );
+          return const HomeScreen();
+        },
+      );
+    }
+
+    // Si l'utilisateur n'est pas connecté
+    return const LoginScreen();
   }
 }
