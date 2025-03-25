@@ -4,7 +4,7 @@ import 'package:medcare/constants/theme.dart';
 import 'package:medcare/models/models.dart';
 import 'package:medcare/screens/add_treatment_form.dart';
 import 'package:medcare/screens/medication_calendar.dart';
-import 'package:medcare/screens/profile.dart';
+import 'package:medcare/screens/profile.dart' as profile;
 import 'package:medcare/screens/traitements.dart';
 import 'package:medcare/services/data_service.dart';
 
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const ProfilScreen(),
+                        builder: (context) => const profile.ProfilScreen(),
                       ),
                     ),
               ),

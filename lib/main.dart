@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:medcare/constants/theme.dart';
 import 'package:medcare/screens/add_treatment_form.dart';
+import 'package:medcare/screens/document_viewer.dart';
 import 'package:medcare/screens/ecran_acceuil.dart';
 import 'package:medcare/screens/medication_calendar.dart';
 import 'package:medcare/screens/profile.dart';

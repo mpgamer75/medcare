@@ -1,5 +1,7 @@
 // Modèles pour les traitements et données utilisateur dans l'application MedCare
 
+import 'package:medcare/models/medical_document.dart';
+
 /// Classe pour représenter un traitement médical
 class Treatment {
   final String id;

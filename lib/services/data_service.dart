@@ -1,4 +1,5 @@
 import 'package:medcare/models/models.dart';
+import 'package:medcare/models/medical_document.dart';
 
 /// Service pour gérer les données de l'application
 class DataService {
@@ -12,6 +13,9 @@ class DataService {
 
   // Liste des traitements
   List<Treatment> _treatments = [];
+
+  // Liste des documents médicaux
+  List<MedicalDocument> _documents = [];
 
   // Initialisation avec des données d'exemple
   void initialize() {
@@ -79,11 +83,43 @@ class DataService {
         isActive: false,
       ),
     ];
+
+    // Documents médicaux d'exemple
+    _documents = [
+      MedicalDocument(
+        id: '1',
+        title: 'Ordonnance médicale',
+        type: DocumentType.prescription,
+        date: DateTime(2025, 2, 15),
+        doctor: 'Dr. Bernard Dupont',
+        description: 'Renouvellement traitement asthme',
+        path: 'assets/documents/ordonnance_20250215.pdf',
+      ),
+      MedicalDocument(
+        id: '2',
+        title: 'Analyse de sang',
+        type: DocumentType.labResult,
+        date: DateTime(2025, 1, 22),
+        doctor: 'Laboratoire Central',
+        description: 'Bilan sanguin annuel',
+        path: 'assets/documents/analyse_sang_20250122.pdf',
+      ),
+      MedicalDocument(
+        id: '3',
+        title: 'Compte-rendu consultation cardiologie',
+        type: DocumentType.medicalReport,
+        date: DateTime(2024, 12, 7),
+        doctor: 'Dr. Marie Lambert',
+        description: 'Contrôle annuel',
+        path: 'assets/documents/cr_cardio_20241207.pdf',
+      ),
+    ];
   }
 
   // Getters
   User get currentUser => _currentUser;
   List<Treatment> get treatments => _treatments;
+  List<MedicalDocument> get documents => _documents;
 
   // Méthodes pour les traitements
   List<Treatment> getActiveTreatments() {
@@ -114,12 +150,48 @@ class DataService {
     _currentUser = user;
   }
 
+  // Méthodes pour les documents médicaux
+  List<MedicalDocument> getAllDocuments() {
+    // Trier par date décroissante (du plus récent au plus ancien)
+    final sortedDocs = List<MedicalDocument>.from(_documents);
+    sortedDocs.sort((a, b) => b.date.compareTo(a.date));
+    return sortedDocs;
+  }
+
+  List<MedicalDocument> getDocumentsByType(DocumentType type) {
+    return _documents.where((doc) => doc.type == type).toList();
+  }
+
+  void addDocument(MedicalDocument document) {
+    _documents.add(document);
+  }
+
+  void updateDocument(MedicalDocument document) {
+    final index = _documents.indexWhere((doc) => doc.id == document.id);
+    if (index != -1) {
+      _documents[index] = document;
+    }
+  }
+
+  void deleteDocument(String id) {
+    _documents.removeWhere((doc) => doc.id == id);
+  }
+
   // Méthodes pour obtenir les traitements par date
   List<Treatment> getTreatmentsByDate(DateTime date) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
     return _treatments.where((t) {
-      return t.isActive &&
-          t.startDate.isBefore(date.add(const Duration(days: 1))) &&
-          t.endDate.isAfter(date.subtract(const Duration(days: 1)));
+      if (!t.isActive) return false;
+
+      final startDate = DateTime(
+        t.startDate.year,
+        t.startDate.month,
+        t.startDate.day,
+      );
+      final endDate = DateTime(t.endDate.year, t.endDate.month, t.endDate.day);
+
+      return !normalizedDate.isBefore(startDate) &&
+          !normalizedDate.isAfter(endDate);
     }).toList();
   }
 
