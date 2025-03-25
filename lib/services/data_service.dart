@@ -1,119 +1,181 @@
+// lib/services/data_service.dart
 import 'package:medcare/models/models.dart';
 import 'package:medcare/models/medical_document.dart';
+import 'package:medcare/services/supabase_service.dart';
 
-/// Service pour gérer les données de l'application
 class DataService {
   // Singleton pattern
   static final DataService _instance = DataService._internal();
   factory DataService() => _instance;
   DataService._internal();
 
-  // Données utilisateur
+  // Données utilisateur en cache
   late User _currentUser;
-
-  // Liste des traitements
   List<Treatment> _treatments = [];
-
-  // Liste des documents médicaux
   List<MedicalDocument> _documents = [];
 
-  // Initialisation avec des données d'exemple
-  void initialize() {
-    // Données utilisateur fictives
-    _currentUser = User(
-      id: '1',
-      name: 'Sophie Martin',
-      email: 'sophie.martin@example.com',
-      phone: '06 12 34 56 78',
-      birthdate: DateTime(1985, 5, 15),
-      height: '168 cm',
-      weight: '65 kg',
-      bloodType: 'A+',
-      allergies: ['Arachide', 'Pénicilline'],
-      chronicDiseases: ['Asthme'],
-      emergencyContact: EmergencyContact(
-        name: 'Pierre Martin',
-        relation: 'Époux',
-        phone: '06 87 65 43 21',
-      ),
-      doctorInfo: DoctorInfo(
-        name: 'Dr. Bernard Dupont',
-        specialty: 'Médecin généraliste',
-        phone: '01 23 45 67 89',
-        address: '15 rue des Lilas, 75001 Paris',
-      ),
+  // Initialisation avec les données de Supabase
+  Future<void> initialize() async {
+    await _loadCurrentUser();
+    await _loadTreatments();
+    await _loadDocuments();
+  }
+
+  // Récupérer l'utilisateur courant
+  Future<void> _loadCurrentUser() async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('Aucun utilisateur connecté');
+    }
+
+    // Récupérer les informations de base de l'utilisateur
+    final userResponse =
+        await SupabaseService.client
+            .from('users')
+            .select()
+            .eq('id', userId)
+            .single();
+
+    // Récupérer les allergies
+    final allergiesResponse = await SupabaseService.client
+        .from('allergies')
+        .select('name')
+        .eq('user_id', userId);
+    final List<String> allergies =
+        (allergiesResponse as List).map((a) => a['name'] as String).toList();
+
+    // Récupérer les maladies chroniques
+    final diseasesResponse = await SupabaseService.client
+        .from('chronic_diseases')
+        .select('name')
+        .eq('user_id', userId);
+    final List<String> chronicDiseases =
+        (diseasesResponse as List).map((d) => d['name'] as String).toList();
+
+    // Récupérer le contact d'urgence
+    final emergencyContactResponse =
+        await SupabaseService.client
+            .from('emergency_contacts')
+            .select()
+            .eq('user_id', userId)
+            .single();
+    final emergencyContact = EmergencyContact(
+      name: emergencyContactResponse['name'],
+      relation: emergencyContactResponse['relation'],
+      phone: emergencyContactResponse['phone'],
     );
 
-    // Traitements d'exemple
-    _treatments = [
-      Treatment(
-        id: '1',
-        name: 'Paracétamol',
-        dosage: '1000mg',
-        frequency: '3 fois par jour',
-        times: ['08:00', '14:00', '20:00'],
-        duration: '5 jours',
-        startDate: DateTime.now().subtract(const Duration(days: 2)),
-        endDate: DateTime.now().add(const Duration(days: 3)),
-        notes: 'Prendre après les repas',
-        isActive: true,
-      ),
-      Treatment(
-        id: '2',
-        name: 'Amoxicilline',
-        dosage: '500mg',
-        frequency: '2 fois par jour',
-        times: ['09:00', '21:00'],
-        duration: '7 jours',
-        startDate: DateTime.now().subtract(const Duration(days: 4)),
-        endDate: DateTime.now().add(const Duration(days: 3)),
-        notes: 'Prendre avec un verre d\'eau',
-        isActive: true,
-      ),
-      Treatment(
-        id: '3',
-        name: 'Ibuprofène',
-        dosage: '400mg',
-        frequency: 'Si nécessaire',
-        times: ['Au besoin'],
-        duration: 'En cas de douleur',
-        startDate: DateTime.now().subtract(const Duration(days: 7)),
-        endDate: DateTime.now().add(const Duration(days: 8)),
-        notes: 'Ne pas dépasser 3 comprimés par jour',
-        isActive: false,
-      ),
-    ];
+    // Récupérer les infos du médecin
+    final doctorInfoResponse =
+        await SupabaseService.client
+            .from('doctor_info')
+            .select()
+            .eq('user_id', userId)
+            .single();
+    final doctorInfo = DoctorInfo(
+      name: doctorInfoResponse['name'],
+      specialty: doctorInfoResponse['specialty'],
+      phone: doctorInfoResponse['phone'],
+      address: doctorInfoResponse['address'],
+    );
 
-    // Documents médicaux d'exemple
-    _documents = [
-      MedicalDocument(
-        id: '1',
-        title: 'Ordonnance médicale',
-        type: DocumentType.prescription,
-        date: DateTime(2025, 2, 15),
-        doctor: 'Dr. Bernard Dupont',
-        description: 'Renouvellement traitement asthme',
-        path: 'assets/documents/ordonnance_20250215.pdf',
-      ),
-      MedicalDocument(
-        id: '2',
-        title: 'Analyse de sang',
-        type: DocumentType.labResult,
-        date: DateTime(2025, 1, 22),
-        doctor: 'Laboratoire Central',
-        description: 'Bilan sanguin annuel',
-        path: 'assets/documents/analyse_sang_20250122.pdf',
-      ),
-      MedicalDocument(
-        id: '3',
-        title: 'Compte-rendu consultation cardiologie',
-        type: DocumentType.medicalReport,
-        date: DateTime(2024, 12, 7),
-        doctor: 'Dr. Marie Lambert',
-        description: 'Contrôle annuel',
-        path: 'assets/documents/cr_cardio_20241207.pdf',
-      ),
-    ];
+    // Créer l'objet utilisateur
+    _currentUser = User(
+      id: userId,
+      name: userResponse['name'],
+      email: userResponse['email'],
+      phone: userResponse['phone'] ?? '',
+      birthdate: DateTime.parse(userResponse['birthdate']),
+      height: userResponse['height'] ?? '',
+      weight: userResponse['weight'] ?? '',
+      bloodType: userResponse['blood_type'] ?? '',
+      allergies: allergies,
+      chronicDiseases: chronicDiseases,
+      emergencyContact: emergencyContact,
+      doctorInfo: doctorInfo,
+    );
+  }
+
+  // Récupérer les traitements
+  Future<void> _loadTreatments() async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    // Récupérer tous les traitements
+    final treatmentsResponse = await SupabaseService.client
+        .from('treatments')
+        .select()
+        .eq('user_id', userId);
+
+    _treatments = [];
+
+    for (final treatmentData in treatmentsResponse) {
+      // Récupérer les horaires pour ce traitement
+      final timesResponse = await SupabaseService.client
+          .from('treatment_times')
+          .select('time')
+          .eq('treatment_id', treatmentData['id']);
+
+      final List<String> times =
+          (timesResponse as List).map((t) => t['time'] as String).toList();
+
+      _treatments.add(
+        Treatment(
+          id: treatmentData['id'],
+          name: treatmentData['name'],
+          dosage: treatmentData['dosage'],
+          frequency: treatmentData['frequency'],
+          times: times,
+          duration: treatmentData['duration'],
+          startDate: DateTime.parse(treatmentData['start_date']),
+          endDate: DateTime.parse(treatmentData['end_date']),
+          notes: treatmentData['notes'],
+          isActive: treatmentData['is_active'],
+        ),
+      );
+    }
+  }
+
+  // Récupérer les documents
+  Future<void> _loadDocuments() async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final documentsResponse = await SupabaseService.client
+        .from('medical_documents')
+        .select()
+        .eq('user_id', userId);
+
+    _documents =
+        documentsResponse.map<MedicalDocument>((doc) {
+          DocumentType type;
+          switch (doc['type']) {
+            case 'prescription':
+              type = DocumentType.prescription;
+              break;
+            case 'labResult':
+              type = DocumentType.labResult;
+              break;
+            case 'medicalReport':
+              type = DocumentType.medicalReport;
+              break;
+            case 'imaging':
+              type = DocumentType.imaging;
+              break;
+            default:
+              type = DocumentType.other;
+          }
+
+          return MedicalDocument(
+            id: doc['id'],
+            title: doc['title'],
+            type: type,
+            date: DateTime.parse(doc['date']),
+            doctor: doc['doctor'],
+            description: doc['description'] ?? '',
+            path: doc['file_path'] ?? '',
+          );
+        }).toList();
   }
 
   // Getters
@@ -130,51 +192,243 @@ class DataService {
     return _treatments.where((t) => !t.isActive).toList();
   }
 
-  void addTreatment(Treatment treatment) {
-    _treatments.add(treatment);
-  }
+  Future<void> addTreatment(Treatment treatment) async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) return;
 
-  void updateTreatment(Treatment treatment) {
-    final index = _treatments.indexWhere((t) => t.id == treatment.id);
-    if (index != -1) {
-      _treatments[index] = treatment;
+    // Ajouter le traitement dans la base de données
+    final response =
+        await SupabaseService.client
+            .from('treatments')
+            .insert({
+              'user_id': userId,
+              'name': treatment.name,
+              'dosage': treatment.dosage,
+              'frequency': treatment.frequency,
+              'duration': treatment.duration,
+              'start_date': treatment.startDate.toIso8601String(),
+              'end_date': treatment.endDate.toIso8601String(),
+              'notes': treatment.notes,
+              'is_active': treatment.isActive,
+            })
+            .select()
+            .single();
+
+    // Ajouter les horaires du traitement
+    for (final time in treatment.times) {
+      await SupabaseService.client.from('treatment_times').insert({
+        'treatment_id': response['id'],
+        'time': time,
+      });
     }
+
+    // Mettre à jour la liste locale
+    await _loadTreatments();
   }
 
-  void deleteTreatment(String id) {
-    _treatments.removeWhere((t) => t.id == id);
+  Future<void> updateTreatment(Treatment treatment) async {
+    // Mettre à jour le traitement dans la base de données
+    await SupabaseService.client
+        .from('treatments')
+        .update({
+          'name': treatment.name,
+          'dosage': treatment.dosage,
+          'frequency': treatment.frequency,
+          'duration': treatment.duration,
+          'start_date': treatment.startDate.toIso8601String(),
+          'end_date': treatment.endDate.toIso8601String(),
+          'notes': treatment.notes,
+          'is_active': treatment.isActive,
+        })
+        .eq('id', treatment.id);
+
+    // Supprimer les anciens horaires
+    await SupabaseService.client
+        .from('treatment_times')
+        .delete()
+        .eq('treatment_id', treatment.id);
+
+    // Ajouter les nouveaux horaires
+    for (final time in treatment.times) {
+      await SupabaseService.client.from('treatment_times').insert({
+        'treatment_id': treatment.id,
+        'time': time,
+      });
+    }
+
+    // Mettre à jour la liste locale
+    await _loadTreatments();
+  }
+
+  Future<void> deleteTreatment(String id) async {
+    // Supprimer le traitement (les horaires seront supprimés en cascade)
+    await SupabaseService.client.from('treatments').delete().eq('id', id);
+
+    // Mettre à jour la liste locale
+    await _loadTreatments();
   }
 
   // Méthodes pour l'utilisateur
-  void updateUser(User user) {
+  Future<void> updateUser(User user) async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    // Mettre à jour les informations de base
+    await SupabaseService.client
+        .from('users')
+        .update({
+          'name': user.name,
+          'email': user.email,
+          'phone': user.phone,
+          'birthdate': user.birthdate.toIso8601String(),
+          'height': user.height,
+          'weight': user.weight,
+          'blood_type': user.bloodType,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', userId);
+
+    // Mettre à jour le contact d'urgence
+    await SupabaseService.client
+        .from('emergency_contacts')
+        .update({
+          'name': user.emergencyContact.name,
+          'relation': user.emergencyContact.relation,
+          'phone': user.emergencyContact.phone,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('user_id', userId);
+
+    // Mettre à jour les informations du médecin
+    await SupabaseService.client
+        .from('doctor_info')
+        .update({
+          'name': user.doctorInfo.name,
+          'specialty': user.doctorInfo.specialty,
+          'phone': user.doctorInfo.phone,
+          'address': user.doctorInfo.address,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('user_id', userId);
+
+    // Mettre à jour les allergies (supprimer puis réinsérer)
+    await SupabaseService.client
+        .from('allergies')
+        .delete()
+        .eq('user_id', userId);
+
+    for (final allergy in user.allergies) {
+      await SupabaseService.client.from('allergies').insert({
+        'user_id': userId,
+        'name': allergy,
+      });
+    }
+
+    // Mettre à jour les maladies chroniques (supprimer puis réinsérer)
+    await SupabaseService.client
+        .from('chronic_diseases')
+        .delete()
+        .eq('user_id', userId);
+
+    for (final disease in user.chronicDiseases) {
+      await SupabaseService.client.from('chronic_diseases').insert({
+        'user_id': userId,
+        'name': disease,
+      });
+    }
+
+    // Mettre à jour les données locales
     _currentUser = user;
   }
 
-  // Méthodes pour les documents médicaux
-  List<MedicalDocument> getAllDocuments() {
-    // Trier par date décroissante (du plus récent au plus ancien)
-    final sortedDocs = List<MedicalDocument>.from(_documents);
-    sortedDocs.sort((a, b) => b.date.compareTo(a.date));
-    return sortedDocs;
-  }
+  // Méthodes pour les documents
+  Future<void> addDocument(MedicalDocument document) async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) return;
 
-  List<MedicalDocument> getDocumentsByType(DocumentType type) {
-    return _documents.where((doc) => doc.type == type).toList();
-  }
-
-  void addDocument(MedicalDocument document) {
-    _documents.add(document);
-  }
-
-  void updateDocument(MedicalDocument document) {
-    final index = _documents.indexWhere((doc) => doc.id == document.id);
-    if (index != -1) {
-      _documents[index] = document;
+    // Convertir le type de document en string
+    String typeStr;
+    switch (document.type) {
+      case DocumentType.prescription:
+        typeStr = 'prescription';
+        break;
+      case DocumentType.labResult:
+        typeStr = 'labResult';
+        break;
+      case DocumentType.medicalReport:
+        typeStr = 'medicalReport';
+        break;
+      case DocumentType.imaging:
+        typeStr = 'imaging';
+        break;
+      case DocumentType.other:
+        typeStr = 'other';
+        break;
     }
+
+    // Ajouter le document dans la base de données
+    await SupabaseService.client.from('medical_documents').insert({
+      'user_id': userId,
+      'title': document.title,
+      'type': typeStr,
+      'date': document.date.toIso8601String(),
+      'doctor': document.doctor,
+      'description': document.description,
+      'file_path': document.path,
+    });
+
+    // Mettre à jour la liste locale
+    await _loadDocuments();
   }
 
-  void deleteDocument(String id) {
-    _documents.removeWhere((doc) => doc.id == id);
+  Future<void> updateDocument(MedicalDocument document) async {
+    // Convertir le type de document en string
+    String typeStr;
+    switch (document.type) {
+      case DocumentType.prescription:
+        typeStr = 'prescription';
+        break;
+      case DocumentType.labResult:
+        typeStr = 'labResult';
+        break;
+      case DocumentType.medicalReport:
+        typeStr = 'medicalReport';
+        break;
+      case DocumentType.imaging:
+        typeStr = 'imaging';
+        break;
+      case DocumentType.other:
+        typeStr = 'other';
+        break;
+    }
+
+    // Mettre à jour le document dans la base de données
+    await SupabaseService.client
+        .from('medical_documents')
+        .update({
+          'title': document.title,
+          'type': typeStr,
+          'date': document.date.toIso8601String(),
+          'doctor': document.doctor,
+          'description': document.description,
+          'file_path': document.path,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', document.id);
+
+    // Mettre à jour la liste locale
+    await _loadDocuments();
+  }
+
+  Future<void> deleteDocument(String id) async {
+    // Supprimer le document
+    await SupabaseService.client
+        .from('medical_documents')
+        .delete()
+        .eq('id', id);
+
+    // Mettre à jour la liste locale
+    await _loadDocuments();
   }
 
   // Méthodes pour obtenir les traitements par date

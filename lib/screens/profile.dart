@@ -1000,7 +1000,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+              backgroundColor: AppTheme.primaryColor.withValues(
+                red: 255,
+                green: 255,
+                blue: 255,
+              ),
               child: Text(
                 name
                     .split(' ')
@@ -1242,7 +1246,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                       backgroundColor: AppTheme.primaryColor,
                     ),
                     onPressed: () {
-                      // Traiter les allergies et les maladies chroniques
+                      // Traite les allergies et les maladies chroniques
                       final List<String> allergies =
                           allergiesController.text
                               .split(',')
