@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:medcare/constants/theme.dart';
+import 'package:medcare/screens/add_treatment_form.dart';
+import 'package:medcare/screens/medication_calendar.dart';
+import 'package:medcare/services/data_service.dart';
+import 'package:medcare/models/models.dart';
 
 class TraitementsScreen extends StatefulWidget {
   const TraitementsScreen({super.key});
@@ -12,47 +17,23 @@ class _TraitementsScreenState extends State<TraitementsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Données factices pour les traitements
-  final List<Map<String, dynamic>> _treatments = [
-    {
-      'name': 'Paracétamol',
-      'dosage': '1000mg',
-      'frequency': '3 fois par jour',
-      'time': ['08:00', '14:00', '20:00'],
-      'duration': '5 jours',
-      'startDate': '10/03/2025',
-      'endDate': '15/03/2025',
-      'notes': 'Prendre après les repas',
-      'isActive': true,
-    },
-    {
-      'name': 'Amoxicilline',
-      'dosage': '500mg',
-      'frequency': '2 fois par jour',
-      'time': ['09:00', '21:00'],
-      'duration': '7 jours',
-      'startDate': '08/03/2025',
-      'endDate': '15/03/2025',
-      'notes': 'Prendre avec un verre d\'eau',
-      'isActive': true,
-    },
-    {
-      'name': 'Ibuprofène',
-      'dosage': '400mg',
-      'frequency': 'Si nécessaire',
-      'time': ['Au besoin'],
-      'duration': 'En cas de douleur',
-      'startDate': '05/03/2025',
-      'endDate': '20/03/2025',
-      'notes': 'Ne pas dépasser 3 comprimés par jour',
-      'isActive': false,
-    },
-  ];
+  // Service pour gérer les données
+  final DataService _dataService = DataService();
+
+  // Liste des traitements
+  List<Treatment> _treatments = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadTreatments();
+  }
+
+  // Charger les traitements
+  void _loadTreatments() {
+    _treatments = _dataService.treatments;
+    setState(() {});
   }
 
   @override
@@ -66,6 +47,21 @@ class _TraitementsScreenState extends State<TraitementsScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mes Traitements'),
+        actions: [
+          // Bouton pour accéder au calendrier
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'Calendrier médical',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MedicationCalendarScreen(),
+                ),
+              ).then((_) => _loadTreatments());
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
@@ -84,13 +80,20 @@ class _TraitementsScreenState extends State<TraitementsScreen>
           _buildHistoryTreatmentsList(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
-          // Ouvrir la boîte de dialogue pour ajouter un traitement
-          _showAddTreatmentDialog();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) =>
+                      AddTreatmentScreen(onTreatmentAdded: _loadTreatments),
+            ),
+          );
         },
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Ajouter', style: TextStyle(color: Colors.white)),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,
@@ -119,7 +122,7 @@ class _TraitementsScreenState extends State<TraitementsScreen>
 
   // Liste des traitements actifs
   Widget _buildActiveTreatmentsList() {
-    final activeTreatments = _treatments.where((t) => t['isActive']).toList();
+    final activeTreatments = _treatments.where((t) => t.isActive).toList();
 
     if (activeTreatments.isEmpty) {
       return Center(
@@ -137,10 +140,23 @@ class _TraitementsScreenState extends State<TraitementsScreen>
               style: TextStyle(fontSize: 18, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 8),
-            TextButton.icon(
+            ElevatedButton.icon(
               icon: const Icon(Icons.add),
               label: const Text('Ajouter un traitement'),
-              onPressed: () => _showAddTreatmentDialog(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => AddTreatmentScreen(
+                          onTreatmentAdded: _loadTreatments,
+                        ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -159,7 +175,7 @@ class _TraitementsScreenState extends State<TraitementsScreen>
 
   // Liste de l'historique des traitements
   Widget _buildHistoryTreatmentsList() {
-    final historyTreatments = _treatments.where((t) => !t['isActive']).toList();
+    final historyTreatments = _treatments.where((t) => !t.isActive).toList();
 
     if (historyTreatments.isEmpty) {
       return Center(
@@ -192,10 +208,7 @@ class _TraitementsScreenState extends State<TraitementsScreen>
   }
 
   // Carte pour afficher un traitement
-  Widget _buildTreatmentCard(
-    Map<String, dynamic> treatment, {
-    bool isHistory = false,
-  }) {
+  Widget _buildTreatmentCard(Treatment treatment, {bool isHistory = false}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -231,14 +244,14 @@ class _TraitementsScreenState extends State<TraitementsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        treatment['name'],
+                        treatment.name,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        treatment['dosage'],
+                        treatment.dosage,
                         style: TextStyle(
                           fontSize: 14,
                           color: AppTheme.textSecondary,
@@ -249,11 +262,16 @@ class _TraitementsScreenState extends State<TraitementsScreen>
                 ),
                 if (!isHistory)
                   Switch(
-                    value: treatment['isActive'],
+                    value: treatment.isActive,
                     activeColor: AppTheme.primaryColor,
                     onChanged: (value) {
                       setState(() {
-                        treatment['isActive'] = value;
+                        // Mettre à jour l'état actif du traitement
+                        final updatedTreatment = treatment.copyWith(
+                          isActive: value,
+                        );
+                        _dataService.updateTreatment(updatedTreatment);
+                        _loadTreatments();
                       });
                     },
                   ),
@@ -266,12 +284,28 @@ class _TraitementsScreenState extends State<TraitementsScreen>
                 _buildInfoItem(
                   icon: Icons.access_time,
                   title: 'Fréquence',
-                  value: treatment['frequency'],
+                  value: treatment.frequency,
                 ),
                 _buildInfoItem(
                   icon: Icons.calendar_today,
                   title: 'Durée',
-                  value: treatment['duration'],
+                  value: treatment.duration,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildInfoItem(
+                  icon: Icons.calendar_today,
+                  title: 'Date de début',
+                  value: DateFormat('dd/MM/yyyy').format(treatment.startDate),
+                ),
+                const SizedBox(width: 16),
+                _buildInfoItem(
+                  icon: Icons.calendar_today,
+                  title: 'Date de fin',
+                  value: DateFormat('dd/MM/yyyy').format(treatment.endDate),
                 ),
               ],
             ),
@@ -288,7 +322,7 @@ class _TraitementsScreenState extends State<TraitementsScreen>
             Wrap(
               spacing: 8,
               children:
-                  (treatment['time'] as List<String>).map((time) {
+                  treatment.times.map((time) {
                     return Chip(
                       backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                       label: Text(
@@ -303,8 +337,7 @@ class _TraitementsScreenState extends State<TraitementsScreen>
                     );
                   }).toList(),
             ),
-            if (treatment['notes'] != null &&
-                treatment['notes'].isNotEmpty) ...[
+            if (treatment.notes != null && treatment.notes!.isNotEmpty) ...[
               const SizedBox(height: 16),
               Text(
                 'Notes',
@@ -316,7 +349,7 @@ class _TraitementsScreenState extends State<TraitementsScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                treatment['notes'],
+                treatment.notes!,
                 style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
               ),
             ],
@@ -329,7 +362,16 @@ class _TraitementsScreenState extends State<TraitementsScreen>
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: const Text('Modifier'),
                     onPressed: () {
-                      // Fonction pour modifier le traitement
+                      // Afficher le formulaire de modification
+                      // (Implémentation future)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Fonctionnalité de modification à venir',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: AppTheme.textSecondary,
@@ -340,10 +382,8 @@ class _TraitementsScreenState extends State<TraitementsScreen>
                     icon: const Icon(Icons.delete_outline, size: 18),
                     label: const Text('Supprimer'),
                     onPressed: () {
-                      // Fonction pour supprimer le traitement
-                      setState(() {
-                        _treatments.remove(treatment);
-                      });
+                      // Confirmer la suppression
+                      _confirmDeleteTreatment(treatment);
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: AppTheme.error,
@@ -355,7 +395,12 @@ class _TraitementsScreenState extends State<TraitementsScreen>
                     label: const Text('Réactiver'),
                     onPressed: () {
                       setState(() {
-                        treatment['isActive'] = true;
+                        // Réactiver le traitement
+                        final updatedTreatment = treatment.copyWith(
+                          isActive: true,
+                        );
+                        _dataService.updateTreatment(updatedTreatment);
+                        _loadTreatments();
                       });
                     },
                     style: TextButton.styleFrom(
@@ -398,17 +443,15 @@ class _TraitementsScreenState extends State<TraitementsScreen>
     );
   }
 
-  // Boîte de dialogue pour ajouter un nouveau traitement
-  void _showAddTreatmentDialog() {
+  // Confirmer la suppression d'un traitement
+  void _confirmDeleteTreatment(Treatment treatment) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Ajouter un traitement'),
-            content: const SingleChildScrollView(
-              child: Text(
-                'Formulaire pour ajouter un traitement (à implémenter)',
-              ),
+            title: const Text('Supprimer le traitement'),
+            content: Text(
+              'Êtes-vous sûr de vouloir supprimer le traitement "${treatment.name}" ?',
             ),
             actions: [
               TextButton(
@@ -416,11 +459,26 @@ class _TraitementsScreenState extends State<TraitementsScreen>
                 child: const Text('Annuler'),
               ),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.error,
+                ),
                 onPressed: () {
-                  // Logique pour ajouter un traitement
+                  // Supprimer le traitement
+                  _dataService.deleteTreatment(treatment.id);
+                  _loadTreatments();
+
+                  // Fermer la boîte de dialogue
                   Navigator.pop(context);
+
+                  // Afficher un message de confirmation
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${treatment.name} supprimé'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
                 },
-                child: const Text('Ajouter'),
+                child: const Text('Supprimer'),
               ),
             ],
           ),

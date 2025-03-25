@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:medcare/constants/theme.dart';
+import 'package:medcare/models/models.dart';
+import 'package:medcare/screens/add_treatment_form.dart';
+import 'package:medcare/screens/medication_calendar.dart';
 import 'package:medcare/screens/profile.dart';
 import 'package:medcare/screens/traitements.dart';
+import 'package:medcare/services/data_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // Service pour les données
+  final DataService _dataService = DataService();
+
+  // Liste des traitements du jour
+  List<Treatment> _todayTreatments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayTreatments();
+  }
+
+  // Charger les traitements du jour
+  void _loadTodayTreatments() {
+    _todayTreatments = _dataService.getTodayTreatments();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +81,36 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Section des traitements du jour
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Traitements du jour',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.calendar_month, size: 18),
+                    label: const Text('Calendrier'),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => const MedicationCalendarScreen(),
+                        ),
+                      ).then((_) => _loadTodayTreatments());
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Liste des traitements du jour
+              _buildTodayTreatmentsList(),
+
+              const SizedBox(height: 24),
+
               // Section des actions principales
               Text(
                 'Actions rapides',
@@ -72,7 +130,7 @@ class HomeScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => const TraitementsScreen(),
                       ),
-                    ),
+                    ).then((_) => _loadTodayTreatments()),
               ),
 
               const SizedBox(height: 16),
@@ -93,6 +151,21 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => AddTreatmentScreen(
+                    onTreatmentAdded: _loadTodayTreatments,
+                  ),
+            ),
+          );
+        },
+        backgroundColor: AppTheme.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
@@ -152,19 +225,13 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildSummaryItem(
                   context,
                   icon: Icons.medication,
-                  title: '2',
-                  subtitle: 'Médicaments',
-                ),
-                _buildSummaryItem(
-                  context,
-                  icon: Icons.check_circle_outline,
-                  title: '75%',
-                  subtitle: 'Assiduité',
+                  title: _todayTreatments.length.toString(),
+                  subtitle: 'Médicaments aujourd\'hui',
                 ),
               ],
             ),
@@ -266,24 +333,130 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // Liste des traitements du jour
+  Widget _buildTodayTreatmentsList() {
+    if (_todayTreatments.isEmpty) {
+      return Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Icon(
+                Icons.medication_outlined,
+                size: 48,
+                color: AppTheme.textSecondary.withOpacity(0.5),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Aucun médicament pour aujourd\'hui',
+                style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Ajouter un traitement'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => AddTreatmentScreen(
+                            onTreatmentAdded: _loadTodayTreatments,
+                          ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children:
+          _todayTreatments
+              .map((treatment) => _buildTreatmentItem(treatment))
+              .toList(),
+    );
+  }
+
+  // Élément de traitement pour la liste du jour
+  Widget _buildTreatmentItem(Treatment treatment) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.medication,
+                color: AppTheme.primaryColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    treatment.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '${treatment.dosage} - ${treatment.frequency}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'Horaires',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  treatment.times.join(', '),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Récupérer la date actuelle formatée
   String _getCurrentDate() {
     final now = DateTime.now();
-    final months = [
-      'janvier',
-      'février',
-      'mars',
-      'avril',
-      'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre',
-    ];
-
-    return '${now.day} ${months[now.month - 1]} ${now.year}';
+    final formatter = DateFormat('EEEE d MMMM yyyy', 'fr_FR');
+    return formatter.format(now);
   }
 }
