@@ -1,4 +1,4 @@
-# Version 1.2.0 (25 mars 2025)
+# Version 1.2.1 (25 mars 2025)
 
 ## 🎨 **Refonte visuelle**  
 
