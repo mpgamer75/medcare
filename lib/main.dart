@@ -56,7 +56,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'MedCare',
+      title: 'EasyCare',
       theme: AppTheme.theme,
       initialRoute: AuthService().isAuthenticated ? '/' : '/login',
       routes: {

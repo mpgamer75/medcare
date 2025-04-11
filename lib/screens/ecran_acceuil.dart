@@ -22,16 +22,32 @@ class _HomeScreenState extends State<HomeScreen> {
   // Liste des traitements du jour
   List<Treatment> _todayTreatments = [];
 
+  // Constantes pour les styles et dimensions
+  static const double _cardBorderRadius = 12.0;
+  static const double _iconSize = 28.0;
+  static const double _smallIconSize = 16.0;
+  static const double _padding = 16.0;
+  static const double _smallPadding = 8.0;
+
   @override
   void initState() {
     super.initState();
     _loadTodayTreatments();
   }
 
-  // Charger les traitements du jour
+  // Charger les traitements du jour avec gestion d'erreur
   void _loadTodayTreatments() {
-    _todayTreatments = _dataService.getTodayTreatments();
-    setState(() {});
+    try {
+      _todayTreatments = _dataService.getTodayTreatments();
+      setState(() {});
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du chargement des traitements: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -39,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('MedCare'),
+        title: const Text('EasyCare'),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
@@ -281,25 +297,29 @@ class _HomeScreenState extends State<HomeScreen> {
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_cardBorderRadius),
         side: BorderSide(color: AppTheme.textLight.withOpacity(0.2), width: 1),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_cardBorderRadius),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(_padding),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(_smallPadding),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(_cardBorderRadius),
                 ),
-                child: Icon(icon, color: AppTheme.primaryColor, size: 28),
+                child: Icon(
+                  icon,
+                  color: AppTheme.primaryColor,
+                  size: _iconSize,
+                ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: _padding),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Icon(
                 Icons.arrow_forward_ios,
                 color: AppTheme.textSecondary,
-                size: 16,
+                size: _smallIconSize,
               ),
             ],
           ),
@@ -389,25 +409,27 @@ class _HomeScreenState extends State<HomeScreen> {
   // Élément de traitement pour la liste du jour
   Widget _buildTreatmentItem(Treatment treatment) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: _smallPadding),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(_cardBorderRadius),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(_padding),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(_smallPadding),
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(_smallPadding),
               ),
               child: Icon(
                 Icons.medication,
                 color: AppTheme.primaryColor,
-                size: 24,
+                size: _iconSize,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: _padding),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

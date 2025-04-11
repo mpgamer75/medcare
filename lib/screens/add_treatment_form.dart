@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:medcare/constants/theme.dart';
 import 'package:medcare/models/models.dart';
 import 'package:medcare/services/data_service.dart';
+import 'package:medcare/services/notification_service.dart';
 
 class AddTreatmentScreen extends StatefulWidget {
   final DateTime? initialDate;
@@ -389,7 +390,7 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
   }
 
   // Soumettre le formulaire
-  void _submitForm() {
+  void _submitForm() async {
     // Valider le formulaire
     if (_formKey.currentState!.validate()) {
       // Calculer la durée si elle n'est pas spécifiée
@@ -428,6 +429,21 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+
+      // Ajouter une notification pour rappel
+      if (_startDate.isAfter(DateTime.now())) {
+        try {
+          await NotificationService.instance.scheduleAppointmentReminder(
+            appointmentId: newTreatment.id,
+            title: 'Prise de ${newTreatment.name}',
+            date: _startDate,
+            doctorName: _dataService.currentUser.doctorInfo.name,
+          );
+        } catch (e) {
+          print('Erreur lors de la planification de la notification: $e');
+          // Ne pas bloquer le flux si la notification échoue
+        }
+      }
 
       Navigator.of(context).pop();
     }
